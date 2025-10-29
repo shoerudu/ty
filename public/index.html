@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>URLy - Link Shortener</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+  <div class="container mt-5">
+    <h1>URLy - Link Shortener</h1>
+    <form id="shortenForm" class="mt-3">
+      <div class="input-group">
+        <input type="text" id="urlInput" class="form-control" placeholder="Enter your URL here" required>
+        <div class="input-group-append">
+          <button type="submit" class="btn btn-primary">Shorten URL</button>
+        </div>
+      </div>
+    </form>
+
+    <div id="shortenedURLContainer" class="mt-3" style="display: none;">
+      <h2>Shortened URL:</h2>
+      <div class="input-group">
+        <input type="text" id="shortenedURL" class="form-control" readonly>
+        <div class="input-group-append">
+          <button id="copyButton" class="btn btn-secondary">Copy</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-5">
+      <h2>Saved Shortened URLs:</h2>
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>Shortened URL</th>
+            <th>Full URL</th>
+            <th>Date Time</th>
+            <th>Copy</th>
+          </tr>
+        </thead>
+        <tbody id="savedLinksBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer class="text-center mt-5">
+    <p>&copy; 2025 URLy - Link Shortener. <a href="https://codexdindia.blogspot.com/tools" target="_blank">CXDIIN</a></p>
+  </footer>
+
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+  <script>
+    const isLocalStorageSupported = typeof Storage !== 'undefined';
+
+    function displaySavedLinks() {
+      const savedLinks = JSON.parse(localStorage.getItem('shortenedLinks')) || [];
+      const tbody = document.getElementById('savedLinksBody');
+      tbody.innerHTML = '';
+
+      savedLinks.forEach(link => {
+        const row = document.createElement('tr');
+
+        row.innerHTML = `
+          <td>${link.shortUrl}</td>
+          <td>${link.fullUrl}</td>
+          <td>${link.dateTime}</td>
+          <td><button class="btn btn-secondary copyBtn">Copy</button></td>
+        `;
+        tbody.appendChild(row);
+
+        row.querySelector('.copyBtn').addEventListener('click', () => {
+          navigator.clipboard.writeText(link.shortUrl);
+          alert('Copied to clipboard!');
+        });
+      });
+    }
+
+    window.addEventListener('load', displaySavedLinks);
+
+    document.getElementById('shortenForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const urlInput = document.getElementById('urlInput').value.trim();
+      if (!urlInput) return;
+
+      try {
+        const res = await fetch('/shorten', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ destination: urlInput })
+        });
+
+        const data = await res.json();
+        if (data.shortUrl) {
+          document.getElementById('shortenedURL').value = data.shortUrl;
+          document.getElementById('shortenedURLContainer').style.display = 'block';
+
+          if (isLocalStorageSupported) {
+            const savedLinks = JSON.parse(localStorage.getItem('shortenedLinks')) || [];
+            savedLinks.push({
+              shortUrl: data.shortUrl,
+              fullUrl: urlInput,
+              dateTime: new Date().toLocaleString()
+            });
+            localStorage.setItem('shortenedLinks', JSON.stringify(savedLinks));
+            displaySavedLinks();
+          }
+        } else {
+          alert('Error: ' + JSON.stringify(data.error));
+        }
+      } catch (err) {
+        alert('Something went wrong!');
+        console.error(err);
+      }
+    });
+  </script>
+</body>
+</html>
