@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
   <title>URLy - Link Shortener</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Bootstrap CSS -->
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 </head>
 <body>
@@ -39,15 +40,17 @@
             <th>Copy</th>
           </tr>
         </thead>
-        <tbody id="savedLinksBody"></tbody>
+        <tbody id="savedLinksBody">
+        </tbody>
       </table>
     </div>
   </div>
 
   <footer class="text-center mt-5">
-    <p>&copy; 2025 URLy - Link Shortener. <a href="https://codexdindia.blogspot.com/tools" target="_blank">CXDIIN</a></p>
+    <p>&copy; 2025 URLy - Link Shortener. All rights reserved. <a href="https://codexdindia.blogspot.com/tools" target="_blank">CXDIIN</a></p>
   </footer>
 
+  <!-- Bootstrap JS and jQuery -->
   <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
@@ -57,42 +60,52 @@
 
     function displaySavedLinks() {
       const savedLinks = JSON.parse(localStorage.getItem('shortenedLinks')) || [];
-      const tbody = document.getElementById('savedLinksBody');
-      tbody.innerHTML = '';
+      const savedLinksBody = document.getElementById('savedLinksBody');
+      savedLinksBody.innerHTML = '';
 
-      savedLinks.forEach(link => {
-        const row = document.createElement('tr');
+      savedLinks.forEach((linkInfo) => {
+        const newRow = document.createElement('tr');
 
-        row.innerHTML = `
-          <td>${link.shortUrl}</td>
-          <td>${link.fullUrl}</td>
-          <td>${link.dateTime}</td>
-          <td><button class="btn btn-secondary copyBtn">Copy</button></td>
-        `;
-        tbody.appendChild(row);
+        const shortUrlCell = document.createElement('td');
+        const fullUrlCell = document.createElement('td');
+        const dateTimeCell = document.createElement('td');
+        const copyCell = document.createElement('td');
 
-        row.querySelector('.copyBtn').addEventListener('click', () => {
-          navigator.clipboard.writeText(link.shortUrl);
-          alert('Copied to clipboard!');
-        });
+        shortUrlCell.textContent = linkInfo.shortUrl;
+        fullUrlCell.textContent = linkInfo.fullUrl;
+        dateTimeCell.textContent = linkInfo.dateTime;
+
+        const copyButton = document.createElement('button');
+        copyButton.className = 'btn btn-secondary';
+        copyButton.textContent = 'Copy';
+        copyButton.addEventListener('click', () => copyToClipboard(linkInfo.shortUrl));
+        copyCell.appendChild(copyButton);
+
+        newRow.appendChild(shortUrlCell);
+        newRow.appendChild(fullUrlCell);
+        newRow.appendChild(dateTimeCell);
+        newRow.appendChild(copyCell);
+
+        savedLinksBody.appendChild(newRow);
       });
     }
 
     window.addEventListener('load', displaySavedLinks);
 
-    document.getElementById('shortenForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
+    document.getElementById('shortenForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
       const urlInput = document.getElementById('urlInput').value.trim();
       if (!urlInput) return;
 
       try {
-        const res = await fetch('/shorten', {
+        const response = await fetch('/shorten', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ destination: urlInput })
         });
 
-        const data = await res.json();
+        const data = await response.json();
+
         if (data.shortUrl) {
           document.getElementById('shortenedURL').value = data.shortUrl;
           document.getElementById('shortenedURLContainer').style.display = 'block';
@@ -115,6 +128,16 @@
         console.error(err);
       }
     });
+
+    function copyToClipboard(text) {
+      const temp = document.createElement('textarea');
+      temp.value = text;
+      document.body.appendChild(temp);
+      temp.select();
+      document.execCommand('copy');
+      document.body.removeChild(temp);
+      alert('Copied to clipboard!');
+    }
   </script>
 </body>
 </html>
